@@ -1,11 +1,10 @@
+```yaml id="hlh9sz"
 name: Market Automation
 
 on:
   schedule:
-  - cron: '5 7-15/0 * * 1-5'
-  - cron: '20 7-15/0 * * 1-5'
-  - cron: '35 7-15/0 * * 1-5'
-  - cron: '50 7-15/0 * * 1-5'
+    - cron: "5,20,35,50 7-15 * * 1-5"
+
   workflow_dispatch:
 
 jobs:
@@ -13,18 +12,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install pandas requests
-          pip install git+https://github.com/rongardF/tvdatafeed.git
+      - run: pip install yfinance pandas requests
 
-      - name: Run bot
-        run: python market_bot.py
+      - run: python market_bot.py
+```
