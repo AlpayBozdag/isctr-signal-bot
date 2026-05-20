@@ -12,6 +12,11 @@ ticker = "ISCTR.IS"
 
 # VERİ ÇEK
 df = yf.download(ticker, period="2d", interval="15m")
+python
+df["Close"] = df["Close"].squeeze()
+df["Volume"] = df["Volume"].squeeze()
+
+
 
 # EMA
 df["EMA20"] = df["Close"].ewm(span=20).mean()
@@ -29,7 +34,9 @@ df["RSI"] = 100 - (100 / (1 + rs))
 last = df.iloc[-1]
 prev = df.iloc[-2]
 
-price = round(float(last["Close"]), 2)
+python
+price = round(last["Close"], 2)
+
 change = round(((last["Close"] - prev["Close"]) / prev["Close"]) * 100, 2)
 rsi = round(float(last["RSI"]), 2)
 ema = round(float(last["EMA20"]), 2)
