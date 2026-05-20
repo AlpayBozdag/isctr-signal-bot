@@ -1,51 +1,78 @@
-import requests
+import yfinance as yf
 import pandas as pd
-from tvDatafeed import TvDatafeed, Interval
+import requests
+from datetime import datetime
 
-TOKEN = "8906567819:AAGwMMU05H-YGk-hytlwTcvJol1grNxjfLE"
+# TELEGRAM
+BOT_TOKEN = "8906567819:AAGwMMU05H-YGk-hytlwTcvJol1grNxjfLE"
 CHAT_ID = "6333716746"
 
-tv = TvDatafeed()
+# HİSSE
+ticker = "ISCTR.IS"
 
-xbank = tv.get_hist(
-symbol='XBANK',
-exchange='BIST',
-interval=Interval.in_1_hour,
-n_bars=700
-)
+# VERİ ÇEK
+df = yf.download(ticker, period="2d", interval="15m")
 
-isctr = tv.get_hist(
-symbol='ISCTR1!',
-exchange='BIST',
-interval=Interval.in_1_hour,
-n_bars=700
-)
+# EMA
+df["EMA20"] = df["Close"].ewm(span=20).mean()
 
-df = pd.DataFrame()
+# RSI
+delta = df["Close"].diff()
 
-df['time'] = xbank.index
-df['xbank_close'] = xbank['close'].values
-df['xbank_volume'] = xbank['volume'].values
+gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
 
-df['isctr_close'] = isctr['close'].values
-df['isctr_volume'] = isctr['volume'].values
+rs = gain / loss
+df["RSI"] = 100 - (100 / (1 + rs))
 
-csv_file = "market_data.csv"
+# SON VERİ
+last = df.iloc[-1]
+prev = df.iloc[-2]
 
-df.to_csv(csv_file, index=False)
+price = round(float(last["Close"]), 2)
+change = round(((last["Close"] - prev["Close"]) / prev["Close"]) * 100, 2)
+rsi = round(float(last["RSI"]), 2)
+ema = round(float(last["EMA20"]), 2)
 
-url = f"https://api.telegram.org/bot{TOKEN}/sendDocument"
+# HACİM
+volume_status = "NORMAL"
 
-files = {
-'document': open(csv_file, 'rb')
-}
+if last["Volume"] > df["Volume"].rolling(10).mean().iloc[-1]:
+    volume_status = "HIGH"
 
-data = {
-'chat_id': CHAT_ID
-}
+# YORUM
+signal = "NEUTRAL"
+emoji = "🟡"
 
-requests.post(
-url,
-files=files,
-data=data
-)
+if price > ema and rsi > 55:
+    signal = "BULLISH"
+    emoji = "🟢"
+
+elif price < ema and rsi < 45:
+    signal = "BEARISH"
+    emoji = "🔴"
+
+# MESAJ
+message = f"""
+{emoji} ISCTR SIGNAL
+
+⏰ {datetime.now().strftime('%H:%M')}
+
+💰 Price: {price}
+📈 Change: %{change}
+📊 RSI: {rsi}
+📉 EMA20: {round(ema,2)}
+📦 Volume: {volume_status}
+
+Signal: {signal}
+"""
+
+# TELEGRAM GÖNDER
+url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+requests.post(url, data={
+    "chat_id": CHAT_ID,
+    "text": message
+})
+
+print(message)
