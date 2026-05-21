@@ -1,4 +1,4 @@
-```yaml id="dx3k0z"
+yaml id="8iqtzt
 name: ISCTR BOT
 
 on:
@@ -18,4 +18,3 @@ jobs:
       - run: pip install yfinance pandas requests
 
       - run: python market_bot.py
-```
